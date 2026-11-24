@@ -1,0 +1,11 @@
+{
+  "name": "caliper",
+  "displayName": "Caliper",
+  "description": "Precision brief-to-design orchestrator for UI/UX teams: 4-gate pipeline from PRD and User Stories to Design System-compliant, QA-verified screens in Figma or FigCraft.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "/caliper buatkan alur dan desain layar dari PRD ini untuk Figma dengan kepatuhan penuh pada Design System",
+    "/caliper bedah User Story dan Acceptance Criteria berikut lalu susun Screen Contract sebelum masuk ke FigCraft",
+    "/caliper audit layar desain yang sudah ada terhadap PRD dan cek kepatuhan token Design System"
+  ]
+}
