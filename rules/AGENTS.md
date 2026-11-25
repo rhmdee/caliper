@@ -47,9 +47,10 @@ Setiap kali membuat UI yang membutuhkan *background overlay* atau komponen popup
 2. **Success / Info / Warning Toast:** Tanpa tombol tutup (`×`), hilang otomatis setelah **5 detik**.
 3. **Error Toast:** Wajib memiliki tombol tutup (`×`) dan tetap tampil sampai pengguna menutupnya.
 
-## 5. Transparansi Frame Layout Wrapper
+## 5. Transparansi Frame Layout Wrapper & Anti-Slop Card Borders
 
 Setiap frame yang berfungsi murni sebagai pembungkus struktur/Auto Layout (`Main Content Wrapper`, `*Row`, `*Col`, `*Stack`, `*Group`, `DrawerHeader`, `DrawerBody`, `Filter Group`, dsb.) **wajib transparan tanpa background fill (`fills: []`)**:
 1. Segera hapus fill default `#FFFFFF` pada semua frame non-kartu, non-pill, dan non-overlay.
 2. Background fill hanya boleh ada pada root screen, kartu konten, tabel header, pill/badge/tombol, drawer/dialog `*Content`, toast, dan `*Overlay` scrim.
 3. Jangan sekadar menyembunyikan fill (`visible: false`); hapus fill-nya agar bersih untuk token binding dan Light/Dark Mode.
+4. **Anti Thick Colored Left-Border Cards:** Dilarang memberi aksen garis tepi kiri berwarna yang lebih tebal (`border-l-2`/`border-l-4` berwarna) pada komponen kartu (`Card`, `DealCard`, `KpiCard`, list card) sebagai penanda prioritas atau status. Gunakan `Badge` semantik, hierarki tipografi, atau varian surface kartu ter-token.

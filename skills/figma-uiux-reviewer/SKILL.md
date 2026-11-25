@@ -550,4 +550,22 @@ Always present the review in a structured Markdown artifact (or direct response 
 
 ### 🟡 P2 — File & Canvas Hygiene
 1. **[Actionable Fix 1]** — Cite frame renaming, overlap cleanup, and hidden layer removal.
+
+---
+
+## Part 4: Dev Handoff Component Inventory & CLI Manifest
+
+Always include a concise handoff summary from `Script 2.2` (`mainComponentUsage`) so frontend engineers and AI coding agents can map screens 1:1 without guessing:
+
+1. **Component Inventory Table:** List all unique DS components detected across in-scope screens (`Component Name | Usage Count | Notes / Key Variants`).
+2. **Registry CLI Block (Auto-Detected Pillar-UI v2):**
+   - If the active Figma file is detected as **`Pillar-UI: Bento`**, **`Pillar-UI: Nexus`**, or **`Pillar-UI: Enterprise`**, automatically map each detected `PascalCase` Component Set to its `@pillar/<kebab-case>` registry slug (excluding shell pieces already bundled inside the theme preset, such as `AppLayout`, `FloatingLeftRail`, `TopHeaderBar`, `MobileAppLayout`, `MobileTopBar`, `MobileBottomNav`, `OverlayContainer`) and output a copy-ready CLI block:
+     ```bash
+     # 1. Theme preset (auto-installs pillar-tokens.css, AppLayout shell, and DESIGN.md)
+     npx shadcn@latest add @pillar/<bento|nexus|enterprise>-theme
+
+     # 2. Granular components detected in this mockup
+     npx shadcn@latest add @pillar/<comp-1> @pillar/<comp-2> ...
+     ```
+   - For non-Pillar Design Systems, omit the `@pillar/*` CLI and present only the clean Component Inventory Table.
 ```
