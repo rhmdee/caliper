@@ -16,7 +16,7 @@ This skill governs the end-to-end process of authoring production-grade, variabl
    * Before binding variables or wiring interactions, **NEVER assume or bind only one superficial property**.
    * ALWAYS perform an exhaustive scan across the entire instance and all its nested sub-instances to discover every bindable property:
      - **Variant Properties:** `variant` (e.g. `primary` vs `outline`), `state` (`idle`, `focused`, `filled`, `hover`, `disabled`), `size`, `type`.
-     - **Input Field State Synchronization (`state: "filled"` vs `"idle"`):** Saat mengikat nilai teks ke input field, DILARANG membiarkan nested `._field-base` berada di state `"idle"`. State `"idle"` menyebabkan teks tampak seperti placeholder redup/abu-abu meskipun nilainya sudah berubah. Wajib mengikat atau mengubah properti `state` pada `._field-base` menjadi `"filled"` agar teks dirender tegas dengan kontras tinggi (*active filled input*).
+     - **Input Field State Synchronization (Filled vs Idle/Placeholder):** Saat mengikat nilai teks ke input field (termasuk jika komponen memakai nested sub-instance seperti `Control`, `Input`, atau `._field-base`), DILARANG membiarkan input berada di state `"idle"`/`"placeholder"` saat nilainya sudah terisi. State placeholder menyebabkan teks tampak redup meskipun nilainya berubah. Wajib mengikat atau mengubah properti `state` input ke state aktif/terisi sesuai katalog DS (mis. `"filled"` / `"default"` aktif) agar teks dirender tegas dengan kontras tinggi.
      - **Text Properties:** `text#...` (input values), `label#...`, `helper-text#...`, `invalid-text#...`, `description#...`.
      - **Boolean Properties:** `invalid#...` (error trigger), `has-helper#...`, `has-label#...`, `mandatory#...`, `showLeadingIcon`, `showTrailingIcon`.
      - **Instance Swap Properties:** `icon#...` (icon swaps).
@@ -39,16 +39,15 @@ This skill governs the end-to-end process of authoring production-grade, variabl
 6. **Canvas Cleanliness & Section Dignity:**
    * Seluruh layar alur mobile wajib berjajar rapi dalam satu baris horizontal dengan jarak konsisten (misal: `32px` antar-layar).
    * Dilarang meletakkan master komponen atau bottom sheet terapung sembarangan di margin kanvas. Letakkan master komponen di area terisolasi berlabel dan bottom sheet sejajar dalam flow.
-7. **The Dual-Property Input Field Contract (`text` + `state: "filled"` Synchronization):**
-   * Pada komponen input field (seperti `field` dengan sub-instance `._field-base`), mengubah atau mengikat properti nilai `text#...` SAJA adalah sebuah kecacatan visual (*anti-pattern*).
-   * State `idle` membawa styling placeholder (warna teks redup/abu-abu).
-   * **Aturan Wajib:** Setiap kali sebuah kotak input memiliki nilai terisi atau nilainya dimutasi oleh interaksi/variabel, properti `state` pada `._field-base` WAJIB diikat ke variabel atau diset ke `"filled"` agar teks dirender tegas dengan kontras tinggi (*high-contrast active input styling*).
+7. **The Dual-Property Input Field Contract (`value/text` + Active State Synchronization):**
+   * Pada komponen input field (baik flat maupun yang membungkus nested sub-instance seperti `Control`, `Input`, atau `._field-base`), mengubah atau mengikat properti nilai teks saja tanpa menyinkronkan properti `state` (jika DS memisahkan state `idle`/`placeholder` vs `filled`) adalah kecacatan visual (*anti-pattern*).
+   * **Aturan Wajib:** Setiap kali kotak input memiliki nilai terisi atau dimutasi oleh interaksi/variabel, periksa apakah komponen memiliki varian/state khusus terisi (mis. `"filled"`) dan ikat atau set state tersebut agar teks dirender dengan kontras penuh.
 8. **Anti-100px Frame Geometry Guard (Strict Programmatic Hugging):**
    * Di Figma Plugin API, setiap panggilan `figma.createFrame()` secara otomatis menginisialisasi ukuran bawaan `100×100 px` dengan `layoutSizingVertical = "FIXED"`.
    * **Aturan Wajib:** Setiap pembuatan Auto Layout frame baru (baris chip, label row, modal header, wrapper) WAJIB secara eksplisit mengeset:
-     - `node.layoutSizingVertical = "HUG"` (kecuali viewport layar penuh fixed 812px)
+     - `node.layoutSizingVertical = "HUG"` (kecuali viewport layar penuh fixed)
      - `node.layoutSizingHorizontal = "FILL"` (atau `"HUG"` sesuai kebutuhan)
-   * Selain itu, seluruh child button pada baris berlebar tetap wajib mengeset sub-instance `._button-base.layoutSizingHorizontal = "FILL"` untuk mencegah teks meluap keluar (*overflow*).
+   * Selain itu, seluruh child button (dan nested base sub-instance-nya jika ada) pada baris berlebar tetap wajib mengeset `layoutSizingHorizontal = "FILL"` untuk mencegah teks meluap keluar (*overflow*).
 
 ---
 
@@ -79,7 +78,7 @@ async function scanInstanceProperties(node) {
     }
   }
 
-  // 2. Scan Sub-instances (misal: ._field-base, ._button-base, badge)
+  // 2. Scan Sub-instances (misal: Control, Input, Button, Badge, atau ._field-base / ._button-base)
   if (node.findAll) {
     const subInsts = node.findAll(n => n.type === 'INSTANCE' && n.id !== node.id);
     for (const sub of subInsts) {
@@ -147,18 +146,20 @@ cardNode.setBoundVariable("visible", booleanVarObj);
 textNode.setBoundVariable("characters", stringVarObj);
 ```
 
-#### 4. The Dual-Binding Contract for Form Inputs (`field` + `._field-base`)
-Saat mengikat kotak input yang nilainya terisi secara default atau dapat dipilih via picker/chip:
+#### 4. The Dual-Binding Contract for Form Inputs (Root + Nested Control Sub-Instance)
+Saat mengikat kotak input yang nilainya terisi secara default atau dapat dipilih via picker/chip (gunakan key properti hasil Phase 1 scanning):
 ```javascript
-// 1. Bind nilai teks
-fieldBase.setProperties({
-  "text#85:0": { type: "VARIABLE_ALIAS", id: textVarId }
+// 1. Bind nilai teks pada properti value/text hasil scan (misal "value#..." atau "text#...")
+inputControl.setProperties({
+  [discoveredValuePropKey]: { type: "VARIABLE_ALIAS", id: textVarId }
 });
 
-// 2. WAJIB bind atau ubah state menjadi "filled" (mencegah teks tampak seperti placeholder redup)
-fieldBase.setProperties({
-  "state": { type: "VARIABLE_ALIAS", id: stateVarId } // atau "state": "filled"
-});
+// 2. Jika DS memisahkan state idle/placeholder vs filled, WAJIB sinkronkan state-nya
+if (hasFilledStateVariant) {
+  inputControl.setProperties({
+    "state": { type: "VARIABLE_ALIAS", id: stateVarId } // atau "state": "filled"
+  });
+}
 ```
 
 ---
@@ -239,7 +240,7 @@ await buttonNode.setReactionsAsync([{
 #### B. Quick Preset Chips (Direct Field & Validation Simulation)
 * Letakkan baris chip langsung di bawah kotak input (gabungkan ke dalam satu Auto Layout group dengan gap `6px`).
 * Atur `layoutSizingHorizontal = "FILL"`, `layoutSizingVertical = "HUG"`, dan `height = 28px`.
-* Seluruh child chip button wajib ber-`layoutGrow = 1` dan nested `._button-base` ber-`layoutSizingHorizontal = "FILL"` untuk mencegah pembengkakan ukuran default (100px) atau teks meluap (*overflow*).
+* Seluruh child chip button wajib ber-`layoutGrow = 1` dan `layoutSizingHorizontal = "FILL"` (termasuk nested base sub-instance-nya jika ada) untuk mencegah pembengkakan ukuran default (100px) atau teks meluap (*overflow*).
 * Sediakan 1 chip batas atas untuk mensimulasikan error validasi:
   - Klik chip nominal normal ➔ `sim_is_invalid = false`.
   - Klik chip over-limit ➔ `sim_is_invalid = true` (border merah + pesan error muncul seketika).
@@ -296,8 +297,8 @@ async function wireSegmentedControls({ buttons, stateVars, dataPayloads }) {
 ## 4. Quality Checklist & Verification Before Completion
 
 1. **Exhaustive Scanning Verification:**
-   - Apakah sub-komponen `._field-base` atau `._button-base` sudah diperiksa?
-   - Apakah properti `text`, `variant`, `state`, dan `invalid` sudah di-scan sebelum diputuskan mana yang di-bind?
+   - Apakah seluruh nested sub-instance input/button (misal `Control`, `Input`, atau `._field-base`/`._button-base`) sudah diperiksa?
+   - Apakah properti nilai teks, `variant`, `state`, dan validasi error sudah di-scan sebelum diputuskan mana yang di-bind?
 2. **Zero Default 100px Frame Overflow:**
    - Periksa apakah ada frame baru yang secara tidak sengaja berukuran `100×100 px` dengan `layoutSizingVertical = "FIXED"`. Semua wrapper harus ber-`layoutSizingVertical = "HUG"`.
 3. **No Duplicate Screen Artboards:**
@@ -306,6 +307,6 @@ async function wireSegmentedControls({ buttons, stateVars, dataPayloads }) {
    - Semua layar alur utama tersusun horizontal rata (`y` seragam, gap `32px`).
    - Master komponen dan bottom sheet diletakkan rapi pada posisinya.
 5. **Input Field State Verification (No Dim/Placeholder Text on Filled Inputs):**
-   - Periksa seluruh instance `._field-base` yang memiliki nilai teks: pastikan `state === "filled"`, bukan `"idle"`.
-6. **Inner-Base Child Sizing Verification:**
-   - Periksa seluruh child button di dalam row/grid: pastikan `._button-base.layoutSizingHorizontal === "FILL"` dan tidak ada teks/emoji yang meluap melewati batas parent.
+   - Periksa seluruh input yang memiliki nilai teks terisi: pastikan tidak terjebak di state placeholder redup.
+6. **Child Button Sizing Verification:**
+   - Periksa seluruh child button di dalam row/grid (beserta nested base-nya jika ada): pastikan `layoutSizingHorizontal === "FILL"` dan tidak ada teks/emoji yang meluap melewati batas parent.
